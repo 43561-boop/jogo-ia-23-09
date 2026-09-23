@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>A Jornada da Vaquinha - Jogo Indie de Corrida</title>
+  <meta name="description" content="Um jogo indie 2D de corrida em uma fazenda chuvosa. Desvie de serras no chão e flechas aéreas, e sobreviva ao evento do trem nos 4000 metros!">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- Canvas Principal de Renderização 2D -->
+    <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+    <!-- HUD em Jogo (In-Game Overlay) -->
+    <div id="hud-overlay" style="display: none;">
+      <!-- Barra Superior com Indicadores -->
+      <div class="hud-top-bar">
+        <div class="hud-stats-group">
+          <div class="hud-card">
+            <span class="hud-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+              Distância
+            </span>
+            <div class="hud-value"><span id="hud-distance">0</span><span class="hud-value-unit">m</span></div>
+          </div>
+          <div class="hud-card">
+            <span class="hud-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              Recorde
+            </span>
+            <div class="hud-value"><span id="hud-record">0</span><span class="hud-value-unit">m</span></div>
+          </div>
+          <div class="hud-card">
+            <span class="hud-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+              Velocidade
+            </span>
+            <div class="hud-value"><span id="hud-speed">24</span><span class="hud-value-unit">km/h</span></div>
+          </div>
+          <div class="hud-card" id="hud-lives-card">
+            <span class="hud-label">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              Vidas
+            </span>
+            <div class="hud-value" id="hud-lives-container" style="display: flex; gap: 4px; align-items: center; height: 32px;">
+              <svg class="hud-heart" id="heart-1" width="18" height="18" viewBox="0 0 24 24" fill="#ef4444" stroke="#dc2626" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              <svg class="hud-heart" id="heart-2" width="18" height="18" viewBox="0 0 24 24" fill="#ef4444" stroke="#dc2626" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+              <svg class="hud-heart" id="heart-3" width="18" height="18" viewBox="0 0 24 24" fill="#ef4444" stroke="#dc2626" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Ações do HUD (Som / Pausa) -->
+        <div class="hud-actions">
+          <button id="btn-toggle-sound" class="hud-icon-btn" title="Alternar Som" aria-label="Alternar Som">
+            <svg id="icon-sound-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <svg id="icon-sound-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>
+          </button>
+          <button id="btn-pause" class="hud-icon-btn" title="Pausar Jogo" aria-label="Pausar Jogo">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Banner de Aviso do Evento Especial (4000m) -->
+      <div id="hud-event-banner" class="hud-event-banner">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+        <div class="event-banner-text">
+          <div id="event-banner-title" class="event-banner-title">CRUZAMENTO FERROVIÁRIO ADIANTE!</div>
+          <div id="event-banner-subtitle" class="event-banner-subtitle">Mantenha a tecla ESPAÇO pressionada para se proteger!</div>
+        </div>
+      </div>
+
+      <!-- Barra de Progresso do Trem (30 segundos) -->
+      <div id="train-progress-box" class="train-event-progress">
+        <div class="train-progress-header">
+          <span>Trem cruzando o cenário...</span>
+          <span id="train-timer-text">30.0s</span>
+        </div>
+        <div class="train-progress-bar-bg">
+          <div id="train-progress-fill" class="train-progress-bar-fill"></div>
+        </div>
+      </div>
+
+      <!-- Barra Inferior de Dicas de Controle -->
+      <div class="hud-bottom-bar">
+        <div class="hud-controls-hint">
+          <div class="control-pill">
+            <span class="key-badge">Espaço</span>
+            <span>Pular</span>
+          </div>
+          <div class="control-pill">
+            <span class="key-badge">Seta Baixo</span>
+            <span>Agachar</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Controles de Toque (Dispositivos Móveis / Touch) -->
+    <div id="touch-controls" class="touch-controls">
+      <button id="touch-duck" class="touch-btn" aria-label="Agachar">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+        Agachar
+      </button>
+      <button id="touch-jump" class="touch-btn" aria-label="Pular">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
+        Pular
+      </button>
+    </div>
+
+    <!-- TELA INICIAL (MENU PRINCIPAL) -->
+    <div id="start-screen" class="screen-layer active">
+      <div class="menu-card">
+        <!-- Ilustração 2D da Vaca -->
+        <div class="cow-showcase">
+          <img src="assets/cow_cover.jpg" alt="Ilustração da Vaca em dia de chuva na fazenda" class="cow-cover-img" id="cow-hero-image">
+          <div class="weather-tag">
+            <span class="weather-indicator-dot"></span>
+            <span>Dia Chuvoso</span>
+          </div>
+        </div>
+
+        <!-- Conteúdo Textual & Ações -->
+        <div class="menu-content">
+          <div class="game-title-group">
+            <span class="game-subtitle">Aventura Indie na Fazenda</span>
+            <h1 class="game-title">A JORNADA DA VAQUINHA</h1>
+            <p class="game-desc">Corra pelos campos úmidos, desvie de serras giratórias e flechas velozes, e alcance o fim da jornada!</p>
+          </div>
+
+          <div class="menu-buttons">
+            <button id="btn-play" class="btn-primary">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+              JOGAR AGORA
+            </button>
+            <div class="menu-secondary-row">
+              <button id="btn-how-to-play" class="btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                Como Jogar
+              </button>
+              <button id="btn-settings" class="btn-secondary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Configurações
+              </button>
+            </div>
+          </div>
+
+          <div class="menu-footer-stats">
+            <span class="high-score-badge">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              Melhor Marca: <strong id="menu-record-val">0</strong> m
+            </span>
+            <span>Versão 1.0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA DE GAME OVER -->
+    <div id="gameover-screen" class="screen-layer">
+      <div class="dialog-card gameover-card">
+        <div class="dialog-header">
+          <div class="dialog-icon-wrapper gameover-icon-wrapper">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+          </div>
+          <h2 class="dialog-title">Fim da Corrida</h2>
+          <p id="gameover-cause" class="dialog-subtitle">A vaquinha foi atingida por um obstáculo!</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Distância Percorrida</span>
+            <span class="stat-val" id="go-distance">0 m</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Melhor Recorde</span>
+            <span class="stat-val" id="go-record">0 m</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Velocidade Máxima</span>
+            <span class="stat-val" id="go-speed">0 km/h</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Obstáculos Evitados</span>
+            <span class="stat-val" id="go-dodged">0</span>
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button id="btn-restart" class="btn-primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="1 4 1 10 7 10"></polyline><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path></svg>
+            TENTAR NOVAMENTE
+          </button>
+          <button id="btn-menu-from-go" class="btn-secondary">
+            Menu Principal
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TELA DE VITÓRIA (FINAL DO JOGO) -->
+    <div id="victory-screen" class="screen-layer">
+      <div class="dialog-card victory-card">
+        <div class="dialog-header">
+          <div class="dialog-icon-wrapper victory-icon-wrapper">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.45 1-1 1H8c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h8c.55 0 1-.45 1-1v-1c0-.55-.45-1-1-1h-1c-.55 0-1-.45-1-1v-2.34"></path><path d="M6 4h12v7a6 6 0 0 1-12 0V4z"></path></svg>
+          </div>
+          <h2 class="dialog-title">Parabéns!</h2>
+          <p class="dialog-subtitle">Você conseguiu chegar ao final da fazenda e completou a jornada!</p>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-label">Distância Concluída</span>
+            <span class="stat-val" id="vic-distance">5.000 m</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Tempo Total</span>
+            <span class="stat-val" id="vic-time">00:00</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Velocidade Máxima</span>
+            <span class="stat-val" id="vic-speed">0 km/h</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-label">Obstáculos Evitados</span>
+            <span class="stat-val" id="vic-dodged">0</span>
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button id="btn-play-again" class="btn-primary">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            JOGAR NOVAMENTE
+          </button>
+          <button id="btn-menu-from-vic" class="btn-secondary">
+            Menu Principal
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: COMO JOGAR -->
+    <div id="modal-how-to-play" class="modal-layer">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            Como Jogar
+          </h3>
+          <button id="btn-close-how" class="modal-close-btn" aria-label="Fechar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="instruction-cards">
+          <div class="instruction-item">
+            <div class="instruction-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+            </div>
+            <div class="instruction-body">
+              <h4 class="instruction-title">Pular (Tecla Espaço / Seta para Cima)</h4>
+              <p class="instruction-text">Faz a vaca saltar. Essencial para pular sobre as <strong>serras giratórias no chão</strong> e <strong>flechas rasteiras</strong>.</p>
+            </div>
+          </div>
+
+          <div class="instruction-item">
+            <div class="instruction-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M19 12l-7 7-7-7"/></svg>
+            </div>
+            <div class="instruction-body">
+              <h4 class="instruction-title">Agachar (Seta para Baixo / Tecla S)</h4>
+              <p class="instruction-text">Reduz imediatamente a altura da vaca pela metade. Permite passar com segurança por baixo das <strong>flechas aéreas médias</strong>.</p>
+            </div>
+          </div>
+
+          <div class="instruction-item">
+            <div class="instruction-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <div class="instruction-body">
+              <h4 class="instruction-title">Evento Especial dos 4000 Metros (O Trem)</h4>
+              <p class="instruction-text">Ao se aproximar dos trilhos, a tela emitirá um alerta para <strong>segurar a tecla Espaço</strong>. Mantenha pressionado para que a vaca permaneça abrigada em segurança enquanto o trem a vapor passa pelo túnel ao fundo durante <strong>30 segundos</strong>.</p>
+            </div>
+          </div>
+
+          <div class="instruction-item">
+            <div class="instruction-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+            </div>
+            <div class="instruction-body">
+              <h4 class="instruction-title">Aumento Progressivo de Dificuldade</h4>
+              <p class="instruction-text">A velocidade aumenta gradualmente com a distância percorrida e a frequência dos obstáculos se intensifica até a linha de chegada aos 5.000 metros.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL: CONFIGURAÇÕES -->
+    <div id="modal-settings" class="modal-layer">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+            Configurações
+          </h3>
+          <button id="btn-close-settings" class="modal-close-btn" aria-label="Fechar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+
+        <div class="settings-list">
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Efeitos Sonoros (SFX)</span>
+              <span class="setting-desc">Pulos, agachamentos, serras e apitos</span>
+            </div>
+            <input type="range" id="slider-sfx-volume" class="range-slider" min="0" max="100" value="80">
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Ambiente de Chuva</span>
+              <span class="setting-desc">Som constante de chuva caindo no campo</span>
+            </div>
+            <input type="range" id="slider-rain-volume" class="range-slider" min="0" max="100" value="50">
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Modo de Teste do Trem (4000m)</span>
+              <span class="setting-desc">Inicia o jogo próximo a 3900m para testar o evento rapidamente</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-train-test">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-info">
+              <span class="setting-name">Redefinir Recorde</span>
+              <span class="setting-desc">Zera a maior distância salva no navegador</span>
+            </div>
+            <button id="btn-reset-record" class="btn-secondary" style="padding: 6px 14px; font-size: 0.8rem;">
+              Zerar Recorde
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts do Jogo -->
+  <script src="js/audio.js"></script>
+  <script src="js/cow.js"></script>
+  <script src="js/obstacles.js"></script>
+  <script src="js/background.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
