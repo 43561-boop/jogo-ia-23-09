@@ -115,7 +115,11 @@ class Cow {
   }
 
   update(dt, gameSpeed) {
-    this.animTime += dt * (gameSpeed / 250);
+    if (this.isSheltered) {
+      this.animTime += dt * 1.5;
+    } else {
+      this.animTime += dt * (gameSpeed / 250);
+    }
 
     // Timers de conforto de controle
     if (this.jumpBufferTimer > 0) {
@@ -243,8 +247,8 @@ class Cow {
 
     // Altura efetiva influenciada pelo agachamento
     const currentHeight = this.height * (1 - this.crouchProgress * 0.45);
-    const bodyBob = this.isGrounded && !this.isSheltered ? Math.sin(this.animTime * 8) * 3 : 0;
-    const legPhase = this.animTime * 8;
+    const bodyBob = this.isGrounded && !this.isSheltered ? Math.sin(this.animTime * 8) * 3 : (this.isSheltered ? Math.sin(this.animTime * 4) * 2 : 0);
+    const legPhase = this.isSheltered ? 0 : this.animTime * 8;
 
     // Sombra projetada no chão
     const shadowScale = Math.max(0.4, 1 - (this.groundY - this.y) / 200);
@@ -253,11 +257,15 @@ class Cow {
     ctx.ellipse(0, 2, 44 * shadowScale, 9 * shadowScale, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // Se estiver abrigada durante o trem (deitada confortavelmente protegida)
+    // Indicador visual de proteção segura
     if (this.isSheltered) {
-      this.drawShelteredCow(ctx);
+      ctx.save();
+      ctx.translate(0, -currentHeight - 34);
+      ctx.fillStyle = '#22c55e';
+      ctx.font = '700 12px Outfit, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('PROTEGIDA', 0, 0);
       ctx.restore();
-      return;
     }
 
     // Se estiver no evento do trem mas NÃO estiver segurando espaço (em perigo!)
@@ -382,10 +390,21 @@ class Cow {
     ctx.restore();
 
     // 6. Cabeça da Vaca
-    const headX = 36;
-    const headY = bodyTop + (this.crouchProgress > 0.4 ? 12 : 2);
+    let headX = 36;
+    let headY = bodyTop + (this.crouchProgress > 0.4 ? 12 : 2);
+    let headRotation = 0;
+    
+    // Animação de comer grama
+    if (this.isSheltered) {
+      const eatCycle = Math.sin(this.animTime * 4);
+      headY += 24 + eatCycle * 10;
+      headX += 10;
+      headRotation = 0.5 + eatCycle * 0.1;
+    }
+
     ctx.save();
     ctx.translate(headX, headY);
+    ctx.rotate(headRotation);
 
     // Chifres bonitos
     ctx.fillStyle = '#fbbf24';

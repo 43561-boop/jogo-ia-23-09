@@ -30,8 +30,8 @@ class Background {
 
     // Evento Especial do Trem (4000m)
     this.trainActive = false;
-    this.trainTimer = 0; // Contagem dos 30 segundos
-    this.trainTotalDuration = 30.0;
+    this.trainTimer = 0; // Contagem dos 10 segundos
+    this.trainTotalDuration = 10.0;
     this.trainX = this.width + 400; // Posição do trem
     this.tunnelX = this.width + 100; // Túnel ao fundo
     this.smokeParticles = [];
@@ -86,7 +86,11 @@ class Background {
     window.audioEngine.stopTrainAudio();
   }
 
-  update(dt, gameSpeed) {
+  update(dt, gameSpeed, distance = 0) {
+    this.isRaining = Math.floor(distance / 200) % 2 === 0; // Alterna chuva
+    this.timeOfDay = Math.floor(distance / 60) % 4;
+    this.season = Math.floor(distance / 150) % 4; // 0: Prim, 1: Ver, 2: Out, 3: Inv
+
     // Rolagem em Paralaxe proporcional à velocidade da vaca
     this.offsetSky += gameSpeed * dt * 0.05;
     this.offsetHills += gameSpeed * dt * 0.12;
@@ -109,23 +113,25 @@ class Background {
     }
 
     // Atualização da Chuva
-    for (const drop of this.rainDrops) {
-      drop.y += drop.speed;
-      drop.x -= drop.speed * 0.22; // Chuva em ângulo com vento
+    if (this.isRaining) {
+      for (const drop of this.rainDrops) {
+        drop.y += drop.speed;
+        drop.x -= drop.speed * 0.22; // Chuva em ângulo com vento
 
-      // Ao atingir o chão, cria um pequeno respingo
-      if (drop.y >= this.groundY - 10) {
-        if (Math.random() < 0.25) {
-          this.rainSplashes.push({
-            x: drop.x,
-            y: this.groundY + Math.random() * 10 - 5,
-            radius: 1,
-            maxRadius: 3 + Math.random() * 3,
-            alpha: 0.6
-          });
+        // Ao atingir o chão, cria um pequeno respingo
+        if (drop.y >= this.groundY - 10) {
+          if (Math.random() < 0.25) {
+            this.rainSplashes.push({
+              x: drop.x,
+              y: this.groundY + Math.random() * 10 - 5,
+              radius: 1,
+              maxRadius: 3 + Math.random() * 3,
+              alpha: 0.6
+            });
+          }
+          drop.y = -20;
+          drop.x = Math.random() * (this.width + 200);
         }
-        drop.y = -20;
-        drop.x = Math.random() * (this.width + 200);
       }
     }
 
@@ -218,15 +224,32 @@ class Background {
     }
 
     // 8. Chuva Animada e Respingos (Camada Frontal)
-    this.drawRain(ctx);
+    if (this.isRaining) {
+      this.drawRain(ctx);
+    }
   }
 
   drawSky(ctx) {
-    // Gradiente de céu chuvoso e tempestuoso
+    const isRaining = this.isRaining === undefined ? true : this.isRaining;
+    let colorTop = '#111a24', colorMid = '#1e2b3a', colorBot = '#2c3e50';
+
+    if (!isRaining) {
+      const tod = this.timeOfDay || 0;
+      if (tod === 0) { // Manhã
+        colorTop = '#38bdf8'; colorMid = '#7dd3fc'; colorBot = '#bae6fd';
+      } else if (tod === 1) { // Dia
+        colorTop = '#0ea5e9'; colorMid = '#38bdf8'; colorBot = '#7dd3fc';
+      } else if (tod === 2) { // Tarde
+        colorTop = '#f97316'; colorMid = '#fb923c'; colorBot = '#fcd34d';
+      } else { // Noite
+        colorTop = '#0f172a'; colorMid = '#1e293b'; colorBot = '#334155';
+      }
+    }
+
     const skyGrad = ctx.createLinearGradient(0, 0, 0, this.groundY);
-    skyGrad.addColorStop(0, '#111a24');
-    skyGrad.addColorStop(0.5, '#1e2b3a');
-    skyGrad.addColorStop(1, '#2c3e50');
+    skyGrad.addColorStop(0, colorTop);
+    skyGrad.addColorStop(0.5, colorMid);
+    skyGrad.addColorStop(1, colorBot);
 
     ctx.fillStyle = skyGrad;
     ctx.fillRect(0, 0, this.width, this.height);
@@ -437,15 +460,24 @@ class Background {
     ctx.fillStyle = '#3e2312';
     ctx.fillRect(x - 7, y - 50, 14, 52);
 
-    // Copa da árvore com folhas verdes/frias de chuva
-    ctx.fillStyle = '#1e3a2b';
+    let c1 = '#1e3a2b', c2 = '#2d5a3f'; // Winter / Rain
+    if (!this.isRaining) {
+      const s = this.season || 0;
+      if (s === 0) { c1 = '#4ade80'; c2 = '#22c55e'; } // Spring
+      else if (s === 1) { c1 = '#16a34a'; c2 = '#15803d'; } // Summer
+      else if (s === 2) { c1 = '#f97316'; c2 = '#ea580c'; } // Autumn
+      else { c1 = '#cbd5e1'; c2 = '#94a3b8'; } // Winter
+    }
+
+    // Copa da árvore
+    ctx.fillStyle = c1;
     ctx.beginPath();
     ctx.arc(x, y - 75, radius, 0, Math.PI * 2);
     ctx.arc(x - 22, y - 65, radius * 0.75, 0, Math.PI * 2);
     ctx.arc(x + 22, y - 65, radius * 0.75, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#2d5a3f';
+    ctx.fillStyle = c2;
     ctx.beginPath();
     ctx.arc(x + 4, y - 82, radius * 0.8, 0, Math.PI * 2);
     ctx.fill();

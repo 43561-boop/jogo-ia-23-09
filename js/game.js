@@ -33,7 +33,7 @@ class Game {
 
     // Métricas de Corrida
     this.distance = 0;
-    this.finalDistance = 5000; // Meta final da corrida (5000 metros)
+    this.finalDistance = 10000; // Meta final da corrida (10000 metros)
     this.baseSpeed = 290;      // Velocidade inicial mais suave e acessível (~24 km/h)
     this.maxSpeedReached = 24;
     this.gameSpeed = this.baseSpeed;
@@ -223,7 +223,7 @@ class Game {
 
       // 3. Atualizar Entidades
       this.cow.update(dt, currentPixelsPerSec);
-      this.background.update(dt, effectiveSpeed);
+      this.background.update(dt, effectiveSpeed, this.distance);
 
       // 4. Verificação do Evento Especial dos 4000 Metros
       this.handleTrainEventLogic(dt);
