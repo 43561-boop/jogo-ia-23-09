@@ -9,10 +9,10 @@ class Cow {
     this.y = this.groundY;
     this.vy = 0;
 
-    // Física Aprimorada: Pulo mais alto, suave e com tempo de flutuação generoso
-    this.baseGravity = 0.58;
-    this.gravity = 0.58;
-    this.jumpStrength = -15.6;
+    // Física Aprimorada: Pulo mais alto, atlético e com folga segura sobre as serras
+    this.baseGravity = 0.54;
+    this.gravity = 0.54;
+    this.jumpStrength = -17.2;
 
     // Dimensões da Vaca
     this.width = 92;
@@ -83,9 +83,11 @@ class Cow {
   }
 
   endJump() {
-    // Pulo de altura variável: se soltar o botão no início do pulo, corta o impulso suavemente
-    if (this.vy < -4) {
-      this.vy *= 0.55;
+    // Pulo de altura variável confortável:
+    // Garante que mesmo um toque rápido no botão atinja altura suficiente (-9.5)
+    // para saltar folgadamente sobre qualquer serra no chão!
+    if (this.vy < -9.5) {
+      this.vy = -9.5;
     }
     this.isJumping = false;
   }
@@ -214,9 +216,12 @@ class Cow {
    */
   getHitbox() {
     const isCrouched = this.crouchProgress > 0.35;
-    const boxHeight = isCrouched ? 28 : 52;
-    const boxY = this.y - boxHeight - 2;
-    const boxWidth = isCrouched ? 68 : 58;
+    const isAirborne = !this.isGrounded;
+    const boxHeight = isCrouched ? 28 : (isAirborne ? 42 : 50);
+    // No ar, a margem inferior sobe acompanhando o recolhimento das patas
+    const bottomClearance = (isAirborne && !isCrouched) ? 8 : 2;
+    const boxY = this.y - boxHeight - bottomClearance;
+    const boxWidth = isCrouched ? 68 : 54;
     const boxX = this.x - boxWidth / 2;
 
     return {
